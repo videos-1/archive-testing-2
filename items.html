@@ -105,6 +105,13 @@ select, input{
   background:#0284c7;
 }
 
+.share-btn{
+  margin-top:auto;
+  align-self:flex-start;
+  background:#059669;
+  margin-right: 0.5rem;
+}
+
 /* fullscreen viewer */
 .overlay{
   position:fixed;
@@ -148,19 +155,72 @@ select, input{
   flex-wrap:wrap;
   gap:0.5rem;
 }
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.profile-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--accent);
+  cursor: pointer;
+}
+
+.avatar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+}
+
+.avatar-overlay img {
+  max-width: 90%;
+  max-height: 90%;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+}
+
+.avatar-overlay .close-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: #dc2626;
+  border: none;
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+}
 </style>
 </head>
 
 <body>
 
 <header>
-  <h2>User Archive Uploads</h2>
+  <div class="profile-header">
+    <img id="profileAvatar" class="profile-avatar" src="" alt="Profile Avatar">
+    <h2 id="creatorName">User Archive Uploads</h2>
+  </div>
   <button onclick="goBack()">← Back</button>
   
   <div class="search-container">
     <select id="searchType">
       <option value="title">Title</option>
-      <option value="creator">Creator</option>
       <option value="subject">Tags</option>
     </select>
     <input type="text" id="searchInput" placeholder="Enter search term">
@@ -191,6 +251,11 @@ select, input{
   <iframe id="viewer"></iframe>
 </div>
 
+<div class="avatar-overlay" id="avatarOverlay">
+  <button class="close-btn" onclick="closeAvatar()">✕</button>
+  <img id="avatarFullscreen" src="" alt="Full Avatar">
+</div>
+
 <script>
 const logBox = document.getElementById("log");
 const grid = document.getElementById("grid");
@@ -199,6 +264,10 @@ const viewer = document.getElementById("viewer");
 const searchInput = document.getElementById("searchInput");
 const searchType = document.getElementById("searchType");
 const mediaTypeFilter = document.getElementById("mediaTypeFilter");
+const profileAvatar = document.getElementById("profileAvatar");
+const creatorName = document.getElementById("creatorName");
+const avatarOverlay = document.getElementById("avatarOverlay");
+const avatarFullscreen = document.getElementById("avatarFullscreen");
 
 let allItems = [];
 
@@ -223,6 +292,34 @@ function closeViewer(){
   overlay.style.display="none";
 }
 
+function openAvatar() {
+  avatarFullscreen.src = profileAvatar.src;
+  avatarOverlay.style.display = "flex";
+}
+
+function closeAvatar() {
+  avatarOverlay.style.display = "none";
+}
+
+function shareItem(identifier) {
+  const shareUrl = `Take a look at this VERSE https://yan-1-related-1.github.io/yan-1-website-shared-links-redirecting/archive-identifier-page-shared-links-redirecting.html?identifier=${identifier}`;
+  
+  if (navigator.share) {
+    navigator.share({
+      title: 'Check out this item',
+      text: shareUrl
+    }).catch(error => {
+      log(`❌ Sharing failed: ${error}`);
+    });
+  } else {
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      log(`✅ Link copied to clipboard: ${identifier}`);
+    }).catch(err => {
+      log(`❌ Failed to copy link: ${err}`);
+    });
+  }
+}
+
 async function fetchMetadata(identifier){
   const res = await fetch(`https://archive.org/metadata/${identifier}`);
   return res.json();
@@ -230,9 +327,17 @@ async function fetchMetadata(identifier){
 
 async function fetchAllItems(){
   const profileUrl = localStorage.getItem("current_profile_url");
+  const avatarSrc = localStorage.getItem("current_profile_avatar");
+  
   if(!profileUrl){
     log("❌ No profile selected");
     return;
+  }
+
+  // Set profile avatar
+  if (avatarSrc) {
+    profileAvatar.src = avatarSrc;
+    profileAvatar.onclick = openAvatar;
   }
 
   const match = profileUrl.match(/@([^/]+)/);
@@ -241,6 +346,9 @@ async function fetchAllItems(){
     log("❌ Cannot extract username");
     return;
   }
+
+  // Set creator name
+  creatorName.textContent = username;
 
   const rows=1000;
   let page=1, fetched=0, total=0;
@@ -327,7 +435,6 @@ function renderItems(items) {
       </div>
 
       <div class="meta"><b>Identifier:</b> ${item.identifier}</div>
-      <div class="meta"><b>Creator:</b> ${item.creator}</div>
       <div class="meta"><b>Uploader:</b> ${item.uploader}</div>
       <div class="meta"><b>Public Date:</b> ${item.date}</div>
       <div class="meta"><b>Media Type:</b> ${item.mediaType}</div>
@@ -338,9 +445,14 @@ function renderItems(items) {
         <a href="${item.reviewUrl}" target="_blank" style="color:#60a5fa;">Reviews</a>
       </div>
 
-      <button class="open-btn" onclick="openViewer('${item.embedUrl}')">
-        ⛶ Open Fullscreen
-      </button>
+      <div style="display: flex; gap: 0.5rem;">
+        <button class="share-btn" onclick="shareItem('${item.identifier}')">
+          ᯓ➤ Share
+        </button>
+        <button class="open-btn" onclick="openViewer('${item.embedUrl}')">
+          ⛶ Open Fullscreen
+        </button>
+      </div>
     `;
     grid.appendChild(card);
   });
@@ -359,8 +471,6 @@ function performSearch() {
     switch(type) {
       case 'title':
         return item.title.toLowerCase().includes(searchTerm);
-      case 'creator':
-        return item.creator.toLowerCase().includes(searchTerm);
       case 'subject':
         return item.tags.toLowerCase().includes(searchTerm);
       default:
