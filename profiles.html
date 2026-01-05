@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Profiles Archive</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #020617;
+  color: #e5e7eb;
+  font-family: system-ui, sans-serif;
+  padding: 2rem;
+}
+
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.grid {
+  display: grid;
+  gap: 1.2rem;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+}
+
+.card {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+  transition: transform 0.15s ease;
+}
+
+.card:hover {
+  transform: scale(1.03);
+}
+
+.avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  border: 2px solid #334155;
+  object-fit: cover;
+  background: #1e293b;
+}
+
+button {
+  padding: 0.4rem 0.8rem;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  width: 100%;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h2 style="margin-bottom:1.5rem;text-align:center;">Archived Profiles</h2>
+  <div id="grid" class="grid"></div>
+</div>
+
+<script>
+const stored = localStorage.getItem("archive_profile_urls");
+const grid = document.getElementById("grid");
+
+if (stored) {
+  const urls = JSON.parse(stored);
+  urls.forEach(url => {
+    const match = url.match(/@([^/]+)/);
+    const username = match ? match[1] : "unknown";
+
+    const avatarUrl = `https://archive.org/services/img/@${username}`;
+    const avatarUrl2 = `https://archive.org/services/img/@${username}/uploads`;
+
+    const card = document.createElement("div");
+    card.className = "card";
+
+    const img = document.createElement("img");
+    img.className = "avatar";
+    img.src = avatarUrl;
+    img.onerror = () => {
+      img.src = avatarUrl2;
+      img.onerror = () => {
+        img.src = "https://archive.org/images/glogo.png";
+      };
+    };
+
+    const openBtn = document.createElement("button");
+    openBtn.textContent = "Open";
+    openBtn.onclick = () => {
+      localStorage.setItem("current_profile_url", url);
+      window.location.href = "items.html";
+    };
+
+    card.appendChild(img);
+    card.appendChild(openBtn);
+    grid.appendChild(card);
+  });
+}
+</script>
+
+</body>
+</html>

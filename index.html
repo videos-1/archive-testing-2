@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Archive Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      background: #020617;
+      color: #e5e7eb;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 600px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .option {
+      height: 140px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #0f172a, #020617);
+      border: 1px solid #1e293b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease, background 0.15s ease;
+    }
+
+    .option:hover {
+      transform: scale(1.02);
+      background: linear-gradient(135deg, #1e293b, #020617);
+    }
+
+    .status {
+      text-align: center;
+      font-size: 0.95rem;
+      opacity: 0.85;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="option" onclick="openProfiles()">Profiles</div>
+    <div class="option" onclick="openContent()">Content</div>
+    <div class="status" id="status">Loading archive metadata…</div>
+  </div>
+
+  <script>
+    // ✅ Your real backend URL
+    const BACKEND_API_URL =
+      "https://archive_urls_profiles_backend.ajaia-backend.workers.dev";
+
+    async function loadMetadata() {
+      try {
+        const res = await fetch(BACKEND_API_URL);
+        if (!res.ok) throw new Error("Network response failed");
+
+        const json = await res.json();
+        if (!json.success || !Array.isArray(json.data)) {
+          throw new Error("Invalid backend response");
+        }
+
+        // Extract archive_profile_url only
+        const urls = json.data
+          .map(item => item.archive_profile_url)
+          .filter(Boolean);
+
+        // Store for profiles.html & content.html
+        localStorage.setItem(
+          "archive_profile_urls",
+          JSON.stringify(urls)
+        );
+
+        document.getElementById("status").textContent =
+          `Loaded ${urls.length} archive profiles`;
+
+      } catch (err) {
+        document.getElementById("status").textContent =
+          "Failed to load metadata";
+        console.error("Metadata load error:", err);
+      }
+    }
+
+    function openProfiles() {
+      window.location.href = "profiles.html";
+    }
+
+    function openContent() {
+      window.location.href = "content.html";
+    }
+
+    // 🚀 Auto-load on page entry
+    loadMetadata();
+  </script>
+
+</body>
+</html>

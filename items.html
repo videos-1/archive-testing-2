@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Archive User Items</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+:root{
+  --bg:#020617;
+  --card:#0f172a;
+  --border:#334155;
+  --text:#e5e7eb;
+  --muted:#94a3b8;
+  --accent:#38bdf8;
+}
+
+body{
+  margin:0;
+  font-family:system-ui, monospace;
+  background:var(--bg);
+  color:var(--text);
+}
+
+header{
+  text-align:center;
+  padding:1rem;
+  border-bottom:1px solid var(--border);
+}
+
+button{
+  background:#1e293b;
+  color:var(--text);
+  border:none;
+  padding:0.45rem 0.9rem;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+select, input{
+  background:#1e293b;
+  color:var(--text);
+  border:1px solid var(--border);
+  padding:0.45rem;
+  border-radius:6px;
+  margin:0.25rem;
+}
+
+#log{
+  margin:1rem;
+  padding:1rem;
+  border:1px solid var(--border);
+  background:#020617;
+  max-height:140px;
+  overflow-y:auto;
+  font-size:0.85rem;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+  gap:1rem;
+  padding:1rem;
+}
+
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:0.8rem;
+  display:flex;
+  flex-direction:column;
+  gap:0.5rem;
+}
+
+.card h3{
+  font-size:1rem;
+  margin:0;
+  color:var(--accent);
+}
+
+.preview{
+  width:100%;
+  height:180px;
+  border-radius:6px;
+  overflow:hidden;
+  border:1px solid var(--border);
+}
+
+.preview iframe{
+  width:100%;
+  height:100%;
+  border:none;
+}
+
+.meta{
+  font-size:0.78rem;
+  color:var(--muted);
+  line-height:1.35;
+}
+
+.open-btn{
+  margin-top:auto;
+  align-self:flex-start;
+  background:#0284c7;
+}
+
+/* fullscreen viewer */
+.overlay{
+  position:fixed;
+  inset:0;
+  background:black;
+  display:none;
+  z-index:9999;
+}
+
+.overlay iframe{
+  width:100%;
+  height:100%;
+  border:none;
+}
+
+.close{
+  position:absolute;
+  top:10px;
+  right:10px;
+  z-index:10000;
+  background:#dc2626;
+}
+
+.search-container{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:0.5rem;
+  padding:1rem;
+  align-items:center;
+}
+
+.search-container > * {
+  margin: 0.25rem;
+}
+
+.media-filter{
+  display:flex;
+  justify-content:center;
+  padding:0 1rem 1rem;
+  flex-wrap:wrap;
+  gap:0.5rem;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h2>User Archive Uploads</h2>
+  <button onclick="goBack()">← Back</button>
+  
+  <div class="search-container">
+    <select id="searchType">
+      <option value="title">Title</option>
+      <option value="creator">Creator</option>
+      <option value="subject">Tags</option>
+    </select>
+    <input type="text" id="searchInput" placeholder="Enter search term">
+    <button onclick="performSearch()">Search</button>
+  </div>
+  
+  <div class="media-filter">
+    <select id="mediaTypeFilter">
+      <option value="">All Media Types</option>
+      <option value="texts">Texts</option>
+      <option value="movies">Movies</option>
+      <option value="audio">Audio</option>
+      <option value="software">Software</option>
+      <option value="image">Image</option>
+      <option value="data">Data</option>
+      <option value="collection">Collection</option>
+      <option value="web">Web</option>
+    </select>
+    <button onclick="filterByMediaType()">OK</button>
+  </div>
+</header>
+
+<div id="log"></div>
+<div class="grid" id="grid"></div>
+
+<div class="overlay" id="overlay">
+  <button class="close" onclick="closeViewer()">✕ Close</button>
+  <iframe id="viewer"></iframe>
+</div>
+
+<script>
+const logBox = document.getElementById("log");
+const grid = document.getElementById("grid");
+const overlay = document.getElementById("overlay");
+const viewer = document.getElementById("viewer");
+const searchInput = document.getElementById("searchInput");
+const searchType = document.getElementById("searchType");
+const mediaTypeFilter = document.getElementById("mediaTypeFilter");
+
+let allItems = [];
+
+function goBack(){
+  window.location.href = "profiles.html";
+}
+
+function log(msg){
+  const d=document.createElement("div");
+  d.textContent=msg;
+  logBox.appendChild(d);
+  logBox.scrollTop=logBox.scrollHeight;
+}
+
+function openViewer(url){
+  viewer.src=url;
+  overlay.style.display="block";
+}
+
+function closeViewer(){
+  viewer.src="";
+  overlay.style.display="none";
+}
+
+async function fetchMetadata(identifier){
+  const res = await fetch(`https://archive.org/metadata/${identifier}`);
+  return res.json();
+}
+
+async function fetchAllItems(){
+  const profileUrl = localStorage.getItem("current_profile_url");
+  if(!profileUrl){
+    log("❌ No profile selected");
+    return;
+  }
+
+  const match = profileUrl.match(/@([^/]+)/);
+  const username = match?.[1];
+  if(!username){
+    log("❌ Cannot extract username");
+    return;
+  }
+
+  const rows=1000;
+  let page=1, fetched=0, total=0;
+  allItems = [];
+
+  while(true){
+    log(`📡 Fetching page ${page}`);
+
+    const searchUrl =
+      `https://archive.org/advancedsearch.php?q=creator:@${username}` +
+      `&fl[]=identifier&rows=${rows}&page=${page}&output=json`;
+
+    const res = await fetch(searchUrl);
+    const data = await res.json();
+
+    if(page===1){
+      total=data.response.numFound;
+      log(`📦 Total items: ${total}`);
+    }
+
+    const docs = data.response.docs;
+    if(!docs.length) break;
+
+    for(const doc of docs){
+      fetched++;
+      try{
+        const meta = await fetchMetadata(doc.identifier);
+        const m = meta.metadata || {};
+
+        const title = m.title || doc.identifier;
+        const creator = m.creator || "Unknown";
+        const uploader = m.uploader || "Unknown";
+        const date = m.publicdate || "N/A";
+        const desc = (m.description || "").toString().slice(0,400);
+        const tags = (m.subject || []).toString();
+        const mediaType = m.mediatype || "unknown";
+
+        const embedUrl = `https://archive.org/embed/${doc.identifier}`;
+        const reviewUrl = `https://archive.org/details/${doc.identifier}#reviews`;
+
+        allItems.push({
+          identifier: doc.identifier,
+          title,
+          creator,
+          uploader,
+          date,
+          desc,
+          tags,
+          mediaType,
+          embedUrl,
+          reviewUrl
+        });
+
+      }catch(err){
+        log(`⚠️ Failed metadata for ${doc.identifier}`);
+      }
+    }
+
+    if(fetched>=total) break;
+    page++;
+  }
+
+  // Sort items by public date in descending order (latest first)
+  allItems.sort((a, b) => {
+    const dateA = new Date(a.date);
+    const dateB = new Date(b.date);
+    return dateB - dateA;
+  });
+
+  renderItems(allItems);
+  log(`✅ Done. Loaded ${fetched} items.`);
+}
+
+function renderItems(items) {
+  grid.innerHTML = '';
+  items.forEach(item => {
+    const card=document.createElement("div");
+    card.className="card";
+    card.innerHTML=`
+      <h3>${item.title}</h3>
+
+      <div class="preview">
+        <iframe loading="lazy" src="${item.embedUrl}"></iframe>
+      </div>
+
+      <div class="meta"><b>Identifier:</b> ${item.identifier}</div>
+      <div class="meta"><b>Creator:</b> ${item.creator}</div>
+      <div class="meta"><b>Uploader:</b> ${item.uploader}</div>
+      <div class="meta"><b>Public Date:</b> ${item.date}</div>
+      <div class="meta"><b>Media Type:</b> ${item.mediaType}</div>
+      <div class="meta"><b>Tags:</b> ${item.tags}</div>
+      <div class="meta"><b>Description:</b> ${item.desc}</div>
+
+      <div class="meta">
+        <a href="${item.reviewUrl}" target="_blank" style="color:#60a5fa;">Reviews</a>
+      </div>
+
+      <button class="open-btn" onclick="openViewer('${item.embedUrl}')">
+        ⛶ Open Fullscreen
+      </button>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function performSearch() {
+  const searchTerm = searchInput.value.toLowerCase();
+  const type = searchType.value;
+  
+  if (!searchTerm) {
+    renderItems(allItems);
+    return;
+  }
+  
+  const filteredItems = allItems.filter(item => {
+    switch(type) {
+      case 'title':
+        return item.title.toLowerCase().includes(searchTerm);
+      case 'creator':
+        return item.creator.toLowerCase().includes(searchTerm);
+      case 'subject':
+        return item.tags.toLowerCase().includes(searchTerm);
+      default:
+        return false;
+    }
+  });
+  
+  renderItems(filteredItems);
+}
+
+function filterByMediaType() {
+  const selectedType = mediaTypeFilter.value;
+  
+  if (!selectedType) {
+    renderItems(allItems);
+    return;
+  }
+  
+  const filteredItems = allItems.filter(item => 
+    item.mediaType === selectedType
+  );
+  
+  renderItems(filteredItems);
+}
+
+fetchAllItems();
+</script>
+
+</body>
+</html>
