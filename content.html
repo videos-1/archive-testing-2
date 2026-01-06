@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Contenta</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #020617;
+      color: #e5e7eb;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont;
+      padding: 1.5rem;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 0.3rem;
+      font-size: 1.6rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 0.85rem;
+      opacity: 0.8;
+      margin-bottom: 1rem;
+    }
+
+    .description {
+      text-align: center;
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+      opacity: 0.9;
+    }
+
+    .media-type-selector {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .media-type-selector select {
+      padding: 0.5rem;
+      border-radius: 8px;
+      border: 1px solid #1e293b;
+      background: #0f172a;
+      color: #e5e7eb;
+      margin-right: 0.5rem;
+    }
+
+    .media-type-selector button {
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      border: none;
+      background: #1e293b;
+      color: #e5e7eb;
+      cursor: pointer;
+    }
+
+    .media-type-selector button:hover {
+      background: #334155;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1rem;
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    .card {
+      background: linear-gradient(135deg, #0f172a, #020617);
+      border: 1px solid #1e293b;
+      border-radius: 14px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      transition: transform 0.15s ease;
+    }
+
+    .card:hover {
+      transform: scale(1.02);
+    }
+
+    .title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      word-break: break-all;
+      color: #38bdf8;
+    }
+
+    .meta {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      line-height: 1.4;
+    }
+
+    .open-btn {
+      margin-top: auto;
+      padding: 0.6rem;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      background: #1e293b;
+      color: #e5e7eb;
+      font-weight: 500;
+    }
+
+    .open-btn:hover {
+      background: #334155;
+    }
+
+    .status {
+      text-align: center;
+      opacity: 0.85;
+      margin-top: 2rem;
+      font-size: 0.9rem;
+    }
+
+    .back {
+      display: block;
+      text-align: center;
+      margin-bottom: 1rem;
+      color: #93c5fd;
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    
+    .reviews-link {
+      color: #60a5fa;
+      text-decoration: none;
+    }
+    
+    .reviews-link:hover {
+      text-decoration: underline;
+    }
+
+    /* Fullscreen overlay styles */
+    .fullscreen-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+      z-index: 1001;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .close-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .embed-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .embed-container iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    
+    .share-btn {
+      background: none;
+      border: none;
+      color: #60a5fa;
+      cursor: pointer;
+      font-size: 1.2rem;
+      padding: 0;
+      margin-left: 0.5rem;
+    }
+    
+    .share-btn:hover {
+      color: #93c5fd;
+    }
+    
+    .profile-link {
+      color: #60a5fa;
+      text-decoration: none;
+      margin-left: 5px;
+      cursor: pointer;
+    }
+    
+    .profile-link:hover {
+      text-decoration: underline;
+    }
+    
+    .preview-container {
+      height: 150px;
+      margin: 5px 0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    
+    .preview-container iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    
+    .card-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: auto;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+
+  <a class="back" href="index.html">← Back to Dashboard</a>
+  <h1>
+    <span>📚</span> Contenta
+  </h1>
+  <div class="description">A place to learn, enjoy, feel, and express—while knowing others and being active together.</div>
+  
+  <div class="media-type-selector">
+    <label for="mediatype">Media Type:</label>
+    <select id="mediatype">
+      <option value="all">All Types</option>
+      <option value="texts">Texts</option>
+      <option value="movies">Movies</option>
+      <option value="audio">Audio</option>
+      <option value="software">Software</option>
+      <option value="image">Images</option>
+      <option value="data">Data</option>
+      <option value="web">Web</option>
+      <option value="collection">Collections</option>
+      <option value="account">Accounts</option>
+    </select>
+    <button id="filter-btn">OK</button>
+  </div>
+
+  <div class="subtitle" id="subtitle">Loading all profiles…</div>
+
+  <div class="grid" id="grid"></div>
+  <div class="status" id="status">Initializing…</div>
+
+  <script>
+    const grid = document.getElementById("grid");
+    const status = document.getElementById("status");
+    const subtitle = document.getElementById("subtitle");
+    const mediatypeSelect = document.getElementById("mediatype");
+    const filterBtn = document.getElementById("filter-btn");
+
+    // Store all items for filtering
+    let allItems = [];
+    let currentFilter = "all";
+
+    const stored = localStorage.getItem("archive_profile_urls");
+    if (!stored) {
+      status.textContent = "No archive data found.";
+      throw new Error("Missing localStorage");
+    }
+
+    let profileUrls = JSON.parse(stored);
+    if (!profileUrls.length) {
+      status.textContent = "Archive list is empty.";
+      throw new Error("Empty list");
+    }
+
+    // 🎲 Shuffle profiles (random order, no repeats)
+    profileUrls = profileUrls
+      .map(v => ({ v, r: Math.random() }))
+      .sort((a, b) => a.r - b.r)
+      .map(o => o.v);
+
+    function extractUsername(url) {
+      const match = url.match(/@([^/]+)/);
+      return match ? match[1] : null;
+    }
+
+    const rows = 1000;
+    let totalItems = 0;
+    let profilesDone = 0;
+    let allIdentifiers = [];
+    let processedIdentifiers = 0;
+
+    // Queue for metadata processing
+    let metadataQueue = [];
+    let isProcessing = false;
+
+    async function fetchMetadata(identifier) {
+      try {
+        const res = await fetch(`https://archive.org/metadata/${identifier}`);
+        const data = await res.json();
+        return data.metadata || {};
+      } catch (err) {
+        console.error(`Failed to fetch metadata for ${identifier}`, err);
+        return {};
+      }
+    }
+
+    function displayItem(identifier, metadata) {
+      const title = metadata.title || identifier;
+      const creator = metadata.creator || "Unknown";
+      const uploader = metadata.uploader || "Unknown";
+      const date = metadata.publicdate || "N/A";
+      const tags = metadata.subject ? metadata.subject.toString().slice(0, 100) : "None";
+      const mediaType = metadata.mediatype || "unknown";
+      const description = metadata.description ? metadata.description.toString().slice(0, 150) : "No description";
+      const reviewUrl = `https://archive.org/details/${identifier}#reviews`;
+      const embedUrl = `https://archive.org/embed/${identifier}`;
+      const shareUrl = `https://yan-1-related-1.github.io/yan-1-website-shared-links-redirecting/archive-identifier-page-shared-links-redirecting.html?identifier=${identifier}`;
+      const profileUrl = `https://yan-1-related-1.github.io/yan-1-website-shared-links-redirecting/archive-profile-page-shared-links-redirecting.html?creator=${encodeURIComponent(creator)}`;
+
+      const card = document.createElement("div");
+      card.className = "card";
+      card.dataset.mediatype = mediaType;
+
+      card.innerHTML = `
+        <div class="title">${title}</div>
+        <div class="preview-container">
+          <iframe src="${embedUrl}" loading="lazy"></iframe>
+        </div>
+        <div class="meta"><b>Creator:</b> ${creator}</div>
+        <div class="meta"><b>Uploader:</b> ${uploader}</div>
+        <div class="meta"><b>Date:</b> ${date}</div>
+        <div class="meta"><b>Tags:</b> ${tags}</div>
+        <div class="meta"><b>Media:</b> ${mediaType}</div>
+        <div class="meta"><b>Description:</b> ${description}</div>
+        <div class="meta">
+          <a href="${reviewUrl}" target="_blank" class="reviews-link">Reviews</a>
+        </div>
+        <div class="card-actions">
+          <button class="open-btn" data-embed="${embedUrl}">Open Item</button>
+          <span class="profile-link" data-profile-url="${profileUrl}">👤</span>
+          <button class="share-btn" data-share-url="${shareUrl}" data-title="${title}" data-creator="${creator}" data-description="${description}">ᯓ➤</button>
+        </div>
+      `;
+
+      card.querySelector(".open-btn").onclick = (e) => {
+        const embedUrl = e.target.dataset.embed;
+        openFullscreen(embedUrl);
+      };
+
+      card.querySelector(".profile-link").onclick = (e) => {
+        const profileUrl = e.target.dataset.profileUrl;
+        window.open(profileUrl, '_blank');
+      };
+
+      card.querySelector(".share-btn").onclick = (e) => {
+        const shareUrl = e.target.dataset.shareUrl;
+        const title = e.target.dataset.title;
+        const creator = e.target.dataset.creator;
+        const description = e.target.dataset.description;
+        
+        const fullShareText = `Take a look at this (${title}, ${creator}) ${shareUrl} (${description})`;
+        
+        // Check if Web Share API is available
+        if (navigator.share) {
+          navigator.share({
+            title: title,
+            text: `Take a look at this (${title}, ${creator}) (${description})`,
+            url: shareUrl
+          }).catch(console.error);
+        } else {
+          // Fallback to clipboard
+          navigator.clipboard.writeText(fullShareText).then(() => {
+            alert("Share link copied to clipboard!");
+          }).catch(err => {
+            console.error('Failed to copy: ', err);
+            // Fallback prompt
+            prompt("Copy this link to share:", fullShareText);
+          });
+        }
+      };
+
+      // Insert at the beginning to show newest first
+      grid.insertBefore(card, grid.firstChild);
+      
+      // Store item for filtering
+      allItems.push({
+        element: card,
+        mediatype: mediaType
+      });
+    }
+
+    function filterItems() {
+      const filterValue = currentFilter;
+      
+      allItems.forEach(item => {
+        if (filterValue === "all" || item.mediatype === filterValue) {
+          item.element.style.display = "flex";
+        } else {
+          item.element.style.display = "none";
+        }
+      });
+    }
+
+    async function processMetadataQueue() {
+      if (isProcessing) return;
+      isProcessing = true;
+
+      while (metadataQueue.length > 0) {
+        // Process up to 5 items per second
+        const batch = metadataQueue.splice(0, 5);
+        
+        const promises = batch.map(async (identifier) => {
+          const metadata = await fetchMetadata(identifier);
+          displayItem(identifier, metadata);
+          processedIdentifiers++;
+        });
+
+        await Promise.all(promises);
+        
+        status.textContent =
+          `Profiles processed: ${profilesDone}/${profileUrls.length} • Items loaded: ${totalItems} • Displayed: ${processedIdentifiers}`;
+        
+        // Apply current filter
+        filterItems();
+        
+        // Wait 1 second before next batch
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      isProcessing = false;
+    }
+
+    async function fetchProfileItems(username) {
+      let page = 1;
+      let fetched = 0;
+      let totalFound = 0;
+
+      while (true) {
+        const apiUrl =
+          `https://archive.org/advancedsearch.php` +
+          `?q=creator:@${username}` +
+          `&fl[]=identifier` +
+          `&rows=${rows}` +
+          `&page=${page}` +
+          `&output=json`;
+
+        const res = await fetch(apiUrl);
+        const data = await res.json();
+
+        if (page === 1) {
+          totalFound = data.response.numFound;
+        }
+
+        const docs = data.response.docs;
+        if (!docs.length) break;
+
+        docs.forEach(item => {
+          fetched++;
+          totalItems++;
+          allIdentifiers.push(item.identifier);
+          metadataQueue.push(item.identifier);
+        });
+
+        // Start processing metadata queue
+        if (metadataQueue.length > 0 && !isProcessing) {
+          processMetadataQueue();
+        }
+
+        if (fetched >= totalFound) break;
+        page++;
+      }
+    }
+
+    async function processAllProfiles() {
+      for (const url of profileUrls) {
+        const username = extractUsername(url);
+        if (!username) continue;
+
+        subtitle.textContent = `Fetching uploads from @${username}…`;
+        await fetchProfileItems(username);
+        profilesDone++;
+
+        status.textContent =
+          `Profiles processed: ${profilesDone}/${profileUrls.length} • Items loaded: ${totalItems} • Displayed: ${processedIdentifiers}`;
+      }
+
+      subtitle.textContent = "All archive profiles loaded";
+      status.textContent =
+        `Completed • ${profilesDone} profiles • ${totalItems} items loaded • ${processedIdentifiers} displayed`;
+    }
+
+    // Fullscreen functionality
+    function openFullscreen(embedUrl) {
+      // Create overlay
+      const overlay = document.createElement("div");
+      overlay.className = "fullscreen-overlay";
+      
+      // Create close button
+      const closeBtn = document.createElement("button");
+      closeBtn.className = "close-btn";
+      closeBtn.innerHTML = "✕";
+      closeBtn.onclick = () => {
+        document.body.removeChild(overlay);
+      };
+      
+      // Create embed container
+      const embedContainer = document.createElement("div");
+      embedContainer.className = "embed-container";
+      embedContainer.innerHTML = `<iframe src="${embedUrl}" allowfullscreen></iframe>`;
+      
+      // Assemble and add to body
+      overlay.appendChild(closeBtn);
+      overlay.appendChild(embedContainer);
+      document.body.appendChild(overlay);
+    }
+
+    // Event listeners
+    filterBtn.addEventListener("click", () => {
+      currentFilter = mediatypeSelect.value;
+      filterItems();
+    });
+
+    // Initialize
+    processAllProfiles().catch(err => {
+      console.error(err);
+      status.textContent = "Failed while loading archive content.";
+    });
+  </script>
+
+</body>
+</html>
