@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ProfileX - Creator Profile</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #020617;
+      color: #e5e7eb;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont;
+      padding: 1.5rem;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 0.3rem;
+      font-size: 1.6rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 0.85rem;
+      opacity: 0.8;
+      margin-bottom: 1rem;
+    }
+
+    .back-link {
+      display: block;
+      text-align: center;
+      margin-bottom: 1rem;
+      color: #93c5fd;
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+
+    .avatar-container {
+      text-align: center;
+      margin: 1rem 0;
+    }
+
+    .avatar {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      border: 2px solid #1e293b;
+      cursor: pointer;
+      object-fit: cover;
+      background: #0f172a;
+    }
+
+    .username-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    .share-profile-btn {
+      background: none;
+      border: none;
+      color: #60a5fa;
+      cursor: pointer;
+      font-size: 1.4rem;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .share-profile-btn:hover {
+      color: #93c5fd;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1rem;
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    .card {
+      background: linear-gradient(135deg, #0f172a, #020617);
+      border: 1px solid #1e293b;
+      border-radius: 14px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      transition: transform 0.15s ease;
+    }
+
+    .card:hover {
+      transform: scale(1.02);
+    }
+
+    .title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      word-break: break-all;
+      color: #38bdf8;
+    }
+
+    .meta {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      line-height: 1.4;
+    }
+
+    .open-btn {
+      margin-top: auto;
+      padding: 0.6rem;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      background: #1e293b;
+      color: #e5e7eb;
+      font-weight: 500;
+    }
+
+    .open-btn:hover {
+      background: #334155;
+    }
+
+    .status {
+      text-align: center;
+      opacity: 0.85;
+      margin-top: 2rem;
+      font-size: 0.9rem;
+    }
+
+    .reviews-link {
+      color: #60a5fa;
+      text-decoration: none;
+    }
+    
+    .reviews-link:hover {
+      text-decoration: underline;
+    }
+
+    .fullscreen-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+      z-index: 1001;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .close-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .fullscreen-avatar {
+      max-width: 90%;
+      max-height: 90%;
+      border-radius: 8px;
+      object-fit: contain;
+    }
+
+    .embed-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .embed-container iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    
+    .share-btn {
+      background: none;
+      border: none;
+      color: #60a5fa;
+      cursor: pointer;
+      font-size: 1.2rem;
+      padding: 0;
+      margin-left: 0.5rem;
+    }
+    
+    .share-btn:hover {
+      color: #93c5fd;
+    }
+    
+    .preview-container {
+      height: 150px;
+      margin: 5px 0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    
+    .preview-placeholder {
+      height: 100%;
+      background: #020617;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #64748b;
+      font-size: 0.8rem;
+    }
+    
+    .preview-container iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    
+    .card-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: auto;
+      align-items: center;
+    }
+    
+    .load-more-container {
+      text-align: center;
+      margin-top: 2rem;
+    }
+    
+    .load-more-btn {
+      padding: 0.7rem 1.5rem;
+      border-radius: 10px;
+      border: none;
+      background: #1e293b;
+      color: #e5e7eb;
+      font-weight: 500;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    
+    .load-more-btn:hover {
+      background: #334155;
+    }
+    
+    .original-files-btn {
+      background: none;
+      border: none;
+      color: #10b981;
+      cursor: pointer;
+      font-size: 1.2rem;
+      padding: 0;
+      margin-left: 0.5rem;
+      display: none; /* Hidden by default, shown when we know there are original files */
+    }
+    
+    .original-files-btn:hover {
+      color: #6ee7b7;
+    }
+  </style>
+</head>
+<body>
+
+  <a class="back-link" href="content.html">← Back to Dashboard</a>
+  <h1>
+    <span>👤</span> ProfileX
+  </h1>
+  
+  <div class="avatar-container">
+    <img id="avatar" class="avatar" src="" alt="Profile Avatar" loading="lazy" onerror="this.src='https://archive.org/images/default_user.png';">
+    <div class="username-container">
+      <span id="username-display"></span>
+      <button class="share-profile-btn" id="share-profile-btn">➦</button>
+    </div>
+  </div>
+
+  <div class="subtitle" id="subtitle">Loading profile content…</div>
+
+  <div class="grid" id="grid"></div>
+  <div class="status" id="status">Initializing…</div>
+  
+  <div class="load-more-container">
+    <button class="load-more-btn" id="load-more-btn">Load More</button>
+  </div>
+
+  <script>
+    const grid = document.getElementById("grid");
+    const status = document.getElementById("status");
+    const subtitle = document.getElementById("subtitle");
+    const loadMoreBtn = document.getElementById("load-more-btn");
+    const avatarImg = document.getElementById("avatar");
+    const usernameDisplay = document.getElementById("username-display");
+    const shareProfileBtn = document.getElementById("share-profile-btn");
+
+    // Store all items for filtering
+    let allItems = [];
+
+    // IntersectionObserver for lazy loading previews
+    const previewObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+
+        const container = entry.target;
+        const embedUrl = container.dataset.embed;
+        if (!embedUrl) return;
+
+        container.innerHTML = `
+          <iframe src="${embedUrl}" loading="lazy"></iframe>
+        `;
+
+        previewObserver.unobserve(container);
+      });
+    }, {
+      rootMargin: "200px",
+      threshold: 0.1
+    });
+
+    // Get profile URL from query parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const profileUrl = urlParams.get('archive_profile_url');
+    const urlUsername = urlParams.get('username');
+
+    if (!profileUrl && !urlUsername) {
+      status.textContent = "No profile URL or username provided.";
+      throw new Error("Missing profile URL or username");
+    }
+
+    function extractUsername(url) {
+      const match = url.match(/@([^/]+)/);
+      return match ? match[1] : null;
+    }
+
+    function getArchiveAvatar(username) {
+      return `https://archive.org/services/img/@${username}`;
+    }
+
+    // Account state tracking
+    let accountState = {};
+    const username = urlUsername || extractUsername(profileUrl);
+
+    if (!username) {
+      status.textContent = "Invalid profile URL or username.";
+      throw new Error("Invalid profile URL or username");
+    }
+
+    // Set avatar and username display
+    avatarImg.src = getArchiveAvatar(username);
+    usernameDisplay.textContent = username;
+
+    accountState[profileUrl || username] = {
+      page: 1,
+      total: null,
+      exhausted: false
+    };
+
+    // Fullscreen avatar functionality
+    avatarImg.addEventListener('click', () => {
+      const overlay = document.createElement("div");
+      overlay.className = "fullscreen-overlay";
+      
+      const closeBtn = document.createElement("button");
+      closeBtn.className = "close-btn";
+      closeBtn.innerHTML = "✕";
+      closeBtn.onclick = () => {
+        document.body.removeChild(overlay);
+      };
+      
+      const fullscreenImg = document.createElement("img");
+      fullscreenImg.className = "fullscreen-avatar";
+      fullscreenImg.src = avatarImg.src;
+      fullscreenImg.alt = "Fullscreen Avatar";
+      
+      overlay.appendChild(closeBtn);
+      overlay.appendChild(fullscreenImg);
+      document.body.appendChild(overlay);
+    });
+
+    // Share profile functionality
+    shareProfileBtn.addEventListener('click', () => {
+      const shareUrl = `https://yan-1-related-1.github.io/yan-1-website-shared-links-redirecting/archive-profile-page-shared-links-redirecting.html?username=${username}`;
+      const shareText = `Check out ${username}'s profile: ${shareUrl}`;
+      
+      if (navigator.share) {
+        navigator.share({
+          title: `Profile: ${username}`,
+          text: `Check out ${username}'s profile`,
+          url: shareUrl
+        }).catch(console.error);
+      } else {
+        navigator.clipboard.writeText(shareText).then(() => {
+          alert("Profile link copied to clipboard!");
+        }).catch(err => {
+          console.error('Failed to copy: ', err);
+          prompt("Copy this link to share:", shareText);
+        });
+      }
+    });
+
+    async function fetchItems(profileIdentifier, page) {
+      const state = accountState[profileIdentifier];
+      if (state.exhausted) return null;
+
+      const api =
+        `https://archive.org/advancedsearch.php` +
+        `?q=creator:@${username}` +
+        `&fl[]=identifier` +
+        `&fl[]=title` +
+        `&fl[]=creator` +
+        `&fl[]=uploader` +
+        `&fl[]=publicdate` +
+        `&fl[]=mediatype` +
+        `&fl[]=description` +
+        `&fl[]=subject` +
+        `&sort[]=publicdate desc` +
+        `&rows=9` +
+        `&page=${page}` +
+        `&output=json`;
+
+      const res = await fetch(api);
+      const data = await res.json();
+
+      if (state.total === null) {
+        state.total = data.response.numFound;
+        subtitle.textContent = `${username} (${state.total} items)`;
+      }
+
+      if (!data.response.docs.length) {
+        state.exhausted = true;
+        return null;
+      }
+
+      state.page++;
+      return data.response.docs;
+    }
+
+    // Improved function to get original files count
+    async function getOriginalFilesCount(identifier) {
+      try {
+        const res = await fetch(`https://archive.org/metadata/${identifier}`);
+        const data = await res.json();
+
+        if (!Array.isArray(data.files)) return 0;
+
+        const mediatype = data.metadata?.mediatype;
+
+        const allowedFormatsByType = {
+          video: ["mpeg4", "h.264", "matroska", "quicktime"],
+          audio: ["mp3", "ogg", "flac", "wav", "aac"],
+          texts: ["text pdf", "pdf", "djvu", "epub"],
+          image: ["jpeg", "jpg", "png", "tiff", "bmp"],
+          software: ["zip", "exe", "iso", "tar"],
+          data: ["zip", "csv", "json"]
+        };
+
+        const allowedFormats = allowedFormatsByType[mediatype] || [];
+
+        const realFiles = data.files.filter(file => {
+          if (file.source !== "original") return false;
+
+          const format = (file.format || "").toLowerCase();
+          const name = (file.name || "").toLowerCase();
+
+          // Always exclude helper/system files
+          if (
+            name.startsWith("_") ||
+            name.includes("thumb") ||
+            name.includes("cover") ||
+            name.includes("metadata") ||
+            name.includes("scandata")
+          ) {
+            return false;
+          }
+
+          // Match primary media formats
+          return allowedFormats.some(f => format.includes(f));
+        });
+
+        return realFiles.length;
+      } catch (err) {
+        console.error("Metadata error:", err);
+        return 0;
+      }
+    }
+
+    function createCard(identifier, metadata) {
+      const title = metadata.title || identifier;
+      const creator = metadata.creator || "Unknown";
+      const uploader = metadata.uploader || "Unknown";
+      const date = metadata.publicdate || "N/A";
+      const tags = metadata.subject ? metadata.subject.toString().slice(0, 100) : "None";
+      const mediaType = metadata.mediatype || "unknown";
+      const description = metadata.description ? metadata.description.toString().slice(0, 150) : "No description";
+      const reviewUrl = `https://archive.org/details/${identifier}#reviews`;
+      const embedUrl = `https://archive.org/embed/${identifier}`;
+      const shareUrl = `https://yan-1-related-1.github.io/yan-1-website-shared-links-redirecting/archive-identifier-page-shared-links-redirecting.html?username=${username}&identifier=${identifier}`;
+
+      const card = document.createElement("div");
+      card.className = "card";
+      card.dataset.mediatype = mediaType;
+
+      card.innerHTML = `
+        <div class="title">${title}</div>
+        <div class="preview-container" data-embed="${embedUrl}">
+          <div class="preview-placeholder">Preview</div>
+        </div>
+        <div class="meta"><b>Creator:</b> ${creator}</div>
+        <div class="meta"><b>Uploader:</b> ${uploader}</div>
+        <div class="meta"><b>Date:</b> ${date}</div>
+        <div class="meta"><b>Tags:</b> ${tags}</div>
+        <div class="meta"><b>Media:</b> ${mediaType}</div>
+        <div class="meta"><b>Description:</b> ${description}</div>
+        <div class="meta">
+          <a href="${reviewUrl}" target="_blank" class="reviews-link">Reviews</a>
+        </div>
+        <div class="card-actions">
+          <button class="open-btn" data-embed="${embedUrl}">Open Item</button>
+          <button class="share-btn" data-share-url="${shareUrl}" data-title="${title}" data-creator="${creator}" data-description="${description}">ᯓ➤</button>
+          <button class="original-files-btn" data-identifier="${identifier}" data-username="${username}">ᯤ</button>
+        </div>
+      `;
+
+      card.querySelector(".open-btn").onclick = (e) => {
+        const embedUrl = e.target.dataset.embed;
+        openFullscreen(embedUrl);
+      };
+
+      card.querySelector(".share-btn").onclick = (e) => {
+        const shareUrl = e.target.dataset.shareUrl;
+        const title = e.target.dataset.title;
+        const creator = e.target.dataset.creator;
+        const description = e.target.dataset.description;
+        
+        const fullShareText = `Check out this item (${title}) by ${creator}: ${shareUrl} (${description})`;
+        
+        // Check if Web Share API is available
+        if (navigator.share) {
+          navigator.share({
+            title: title,
+            text: `Check out this item (${title}) by ${creator}`,
+            url: shareUrl
+          }).catch(console.error);
+        } else {
+          // Fallback to clipboard
+          navigator.clipboard.writeText(fullShareText).then(() => {
+            alert("Share link copied to clipboard!");
+          }).catch(err => {
+            console.error('Failed to copy: ', err);
+            // Fallback prompt
+            prompt("Copy this link to share:", fullShareText);
+          });
+        }
+      };
+
+      // Handle original files button click
+      card.querySelector(".original-files-btn").onclick = (e) => {
+        const identifier = e.target.dataset.identifier;
+        const username = e.target.dataset.username;
+        window.location.href = `items_playlist.html?username=${username}&identifier=${identifier}`;
+      };
+
+      // Store item for filtering
+      allItems.push({
+        element: card,
+        mediatype: mediaType
+      });
+      
+      // Observe preview for lazy loading
+      const preview = card.querySelector(".preview-container");
+      previewObserver.observe(preview);
+      
+      return card;
+    }
+
+    async function renderItems(profileIdentifier, items) {
+      const state = accountState[profileIdentifier];
+      
+      // Create document fragment for batch insert
+      const fragment = document.createDocumentFragment();
+
+      // Process items to get original files count
+      const itemsWithCounts = await Promise.all(items.map(async (meta) => {
+        const identifier = meta.identifier;
+        const originalFilesCount = await getOriginalFilesCount(identifier);
+        return { ...meta, originalFilesCount };
+      }));
+
+      // Create cards for all items
+      itemsWithCounts.forEach((meta) => {
+        const identifier = meta.identifier;
+        const card = createCard(identifier, meta);
+        
+        // Show original files button if there are original files
+        if (meta.originalFilesCount > 1) {
+          const originalFilesBtn = card.querySelector(".original-files-btn");
+          originalFilesBtn.style.display = "inline-block";
+          originalFilesBtn.textContent = `ᯤ ${meta.originalFilesCount}`;
+        }
+        
+        fragment.appendChild(card);
+      });
+
+      // Append the entire batch
+      grid.appendChild(fragment);
+      
+      // Update status
+      status.textContent = `Loaded ${items.length} items • Page ${state.page - 1} of ${Math.ceil(state.total / 9)}`;
+      
+      // Hide load more button if exhausted
+      if (state.exhausted) {
+        loadMoreBtn.style.display = "none";
+        status.textContent += " • All items loaded";
+      }
+    }
+
+    async function loadMoreItems() {
+      loadMoreBtn.disabled = true;
+      loadMoreBtn.textContent = "Loading...";
+      
+      const identifier = profileUrl || username;
+      const items = await fetchItems(identifier, accountState[identifier].page);
+      if (items) {
+        await renderItems(identifier, items);
+      } else if (accountState[identifier].exhausted) {
+        status.textContent = "No more items to load";
+      }
+      
+      loadMoreBtn.disabled = false;
+      loadMoreBtn.textContent = "Load More";
+    }
+
+    // Fullscreen item functionality
+    function openFullscreen(embedUrl) {
+      // Create overlay
+      const overlay = document.createElement("div");
+      overlay.className = "fullscreen-overlay";
+      
+      // Create close button
+      const closeBtn = document.createElement("button");
+      closeBtn.className = "close-btn";
+      closeBtn.innerHTML = "✕";
+      closeBtn.onclick = () => {
+        document.body.removeChild(overlay);
+      };
+      
+      // Create embed container
+      const embedContainer = document.createElement("div");
+      embedContainer.className = "embed-container";
+      embedContainer.innerHTML = `<iframe src="${embedUrl}" allowfullscreen></iframe>`;
+      
+      // Assemble and add to body
+      overlay.appendChild(closeBtn);
+      overlay.appendChild(embedContainer);
+      document.body.appendChild(overlay);
+    }
+
+    // Event listeners
+    loadMoreBtn.addEventListener("click", loadMoreItems);
+
+    // Initialize
+    (async function init() {
+      try {
+        const identifier = profileUrl || username;
+        const items = await fetchItems(identifier, 1);
+        if (items) {
+          await renderItems(identifier, items);
+        } else {
+          status.textContent = "No items found for this profile";
+        }
+      } catch (err) {
+        console.error(err);
+        status.textContent = "Error while loading profile content.";
+      }
+    })();
+  </script>
+
+</body>
+</html>
