@@ -15,6 +15,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      position: relative;
     }
 
     .container {
@@ -50,9 +51,26 @@
       font-size: 0.95rem;
       opacity: 0.85;
     }
+
+    .refresh-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: none;
+      border: none;
+      color: #64748b;
+      font-size: 0.7rem;
+      cursor: pointer;
+      padding: 5px;
+    }
+
+    .refresh-btn:hover {
+      color: #94a3b8;
+    }
   </style>
 </head>
 <body>
+  <button class="refresh-btn" onclick="refreshMetadata()">↻ Refresh</button>
 
   <div class="container">
     <div class="option" onclick="openProfiles()">Profiles</div>
@@ -65,8 +83,28 @@
     const BACKEND_API_URL =
       "https://archive_urls_profiles_backend.ajaia-backend.workers.dev";
 
-    async function loadMetadata() {
+    // Cache duration in milliseconds (3 hours)
+    const CACHE_DURATION = 3 * 60 * 60 * 1000;
+
+    async function loadMetadata(forceRefresh = false) {
       try {
+        // Check if we have valid cached data
+        if (!forceRefresh) {
+          const cachedData = localStorage.getItem("archive_metadata_cache");
+          if (cachedData) {
+            const { timestamp, urls } = JSON.parse(cachedData);
+            const now = new Date().getTime();
+            
+            // Use cached data if less than 3 hours old
+            if (now - timestamp < CACHE_DURATION) {
+              document.getElementById("status").textContent =
+                `Loaded ${urls.length} archive profiles (cached)`;
+              return;
+            }
+          }
+        }
+
+        // Fetch fresh data from backend
         const res = await fetch(BACKEND_API_URL);
         if (!res.ok) throw new Error("Network response failed");
 
@@ -80,10 +118,14 @@
           .map(item => item.archive_profile_url)
           .filter(Boolean);
 
-        // Store for profiles.html & content.html
+        // Store in localStorage with timestamp
+        const cacheData = {
+          timestamp: new Date().getTime(),
+          urls: urls
+        };
         localStorage.setItem(
-          "archive_profile_urls",
-          JSON.stringify(urls)
+          "archive_metadata_cache",
+          JSON.stringify(cacheData)
         );
 
         document.getElementById("status").textContent =
@@ -104,9 +146,15 @@
       window.location.href = "content.html";
     }
 
+    function refreshMetadata() {
+      // Clear cache and force refresh
+      localStorage.removeItem("archive_metadata_cache");
+      document.getElementById("status").textContent = "Refreshing metadata...";
+      loadMetadata(true);
+    }
+
     // 🚀 Auto-load on page entry
     loadMetadata();
   </script>
-
 </body>
 </html>
