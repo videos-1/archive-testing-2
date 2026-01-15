@@ -82,6 +82,42 @@
       color: #93c5fd;
     }
 
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+      margin: 1rem 0;
+      padding: 0 1rem;
+    }
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .filter-group label {
+      font-size: 0.9rem;
+    }
+
+    .filter-group select, .filter-group input {
+      padding: 0.4rem;
+      border-radius: 6px;
+      border: 1px solid #334155;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+
+    .filter-group button {
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      border: 1px solid #334155;
+      background: #1e293b;
+      color: #e5e7eb;
+      cursor: pointer;
+    }
+
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -116,6 +152,14 @@
       font-size: 0.75rem;
       color: #94a3b8;
       line-height: 1.4;
+    }
+
+    .description {
+      font-size: 0.75rem;
+      color: #cbd5e1;
+      line-height: 1.4;
+      margin-top: 0.5rem;
+      word-break: break-word;
     }
 
     .open-btn {
@@ -159,8 +203,6 @@
       z-index: 1000;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
     }
 
     .close-btn {
@@ -185,24 +227,11 @@
       background: rgba(255, 255, 255, 0.3);
     }
 
-    .fullscreen-avatar {
-      max-width: 90%;
-      max-height: 90%;
-      border-radius: 8px;
-      object-fit: contain;
-    }
-
-    .embed-container {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .embed-container iframe {
+    .fullscreen-iframe {
       width: 100%;
       height: 100%;
       border: none;
+      margin-top: 60px;
     }
     
     .share-btn {
@@ -249,26 +278,6 @@
       align-items: center;
     }
     
-    .load-more-container {
-      text-align: center;
-      margin-top: 2rem;
-    }
-    
-    .load-more-btn {
-      padding: 0.7rem 1.5rem;
-      border-radius: 10px;
-      border: none;
-      background: #1e293b;
-      color: #e5e7eb;
-      font-weight: 500;
-      cursor: pointer;
-      font-size: 1rem;
-    }
-    
-    .load-more-btn:hover {
-      background: #334155;
-    }
-    
     .original-files-btn {
       background: none;
       border: none;
@@ -277,7 +286,7 @@
       font-size: 1.2rem;
       padding: 0;
       margin-left: 0.5rem;
-      display: none; /* Hidden by default, shown when we know there are original files */
+      display: none;
     }
     
     .original-files-btn:hover {
@@ -302,24 +311,55 @@
 
   <div class="subtitle" id="subtitle">Loading profile content…</div>
 
+  <!-- Filters -->
+  <div class="filters">
+    <div class="filter-group">
+      <label for="mediatype-filter">Media Type:</label>
+      <select id="mediatype-filter">
+        <option value="">All Types</option>
+        <option value="video">Video</option>
+        <option value="audio">Audio</option>
+        <option value="texts">Texts</option>
+        <option value="image">Image</option>
+        <option value="software">Software</option>
+        <option value="data">Data</option>
+      </select>
+      <button id="apply-mediatype">OK</button>
+    </div>
+    
+    <div class="filter-group">
+      <label for="search-type">Search By:</label>
+      <select id="search-type">
+        <option value="title">Title</option>
+        <option value="tags">Tags</option>
+      </select>
+    </div>
+    
+    <div class="filter-group">
+      <input type="text" id="search-input" placeholder="Search...">
+      <button id="search-btn">Search</button>
+    </div>
+  </div>
+
   <div class="grid" id="grid"></div>
   <div class="status" id="status">Initializing…</div>
-  
-  <div class="load-more-container">
-    <button class="load-more-btn" id="load-more-btn">Load More</button>
-  </div>
 
   <script>
     const grid = document.getElementById("grid");
     const status = document.getElementById("status");
     const subtitle = document.getElementById("subtitle");
-    const loadMoreBtn = document.getElementById("load-more-btn");
     const avatarImg = document.getElementById("avatar");
     const usernameDisplay = document.getElementById("username-display");
     const shareProfileBtn = document.getElementById("share-profile-btn");
+    const mediatypeFilter = document.getElementById("mediatype-filter");
+    const applyMediatypeBtn = document.getElementById("apply-mediatype");
+    const searchTypeSelect = document.getElementById("search-type");
+    const searchInput = document.getElementById("search-input");
+    const searchBtn = document.getElementById("search-btn");
 
     // Store all items for filtering
     let allItems = [];
+    let displayedItems = [];
 
     // IntersectionObserver for lazy loading previews
     const previewObserver = new IntersectionObserver(entries => {
@@ -395,6 +435,10 @@
       fullscreenImg.className = "fullscreen-avatar";
       fullscreenImg.src = avatarImg.src;
       fullscreenImg.alt = "Fullscreen Avatar";
+      fullscreenImg.style.maxWidth = "90%";
+      fullscreenImg.style.maxHeight = "90%";
+      fullscreenImg.style.margin = "auto";
+      fullscreenImg.style.borderRadius = "8px";
       
       overlay.appendChild(closeBtn);
       overlay.appendChild(fullscreenImg);
@@ -438,7 +482,7 @@
         `&fl[]=description` +
         `&fl[]=subject` +
         `&sort[]=publicdate desc` +
-        `&rows=9` +
+        `&rows=50` + // Increased rows to load more items
         `&page=${page}` +
         `&output=json`;
 
@@ -513,16 +557,19 @@
       const creator = metadata.creator || "Unknown";
       const uploader = metadata.uploader || "Unknown";
       const date = metadata.publicdate || "N/A";
-      const tags = metadata.subject ? metadata.subject.toString().slice(0, 100) : "None";
+      const tags = metadata.subject ? metadata.subject.toString() : "None";
       const mediaType = metadata.mediatype || "unknown";
-      const description = metadata.description ? metadata.description.toString().slice(0, 150) : "No description";
+      const description = metadata.description ? metadata.description.toString() : "No description";
       const reviewUrl = `https://archive.org/details/${identifier}#reviews`;
       const embedUrl = `https://archive.org/embed/${identifier}`;
       const shareUrl = `https://yan-1-related-1.github.io/yan-1-website-shared-links-redirecting/archive-identifier-page-shared-links-redirecting.html?username=${username}&identifier=${identifier}`;
 
       const card = document.createElement("div");
       card.className = "card";
+      card.dataset.identifier = identifier;
       card.dataset.mediatype = mediaType;
+      card.dataset.title = title.toLowerCase();
+      card.dataset.tags = tags.toLowerCase();
 
       card.innerHTML = `
         <div class="title">${title}</div>
@@ -534,7 +581,7 @@
         <div class="meta"><b>Date:</b> ${date}</div>
         <div class="meta"><b>Tags:</b> ${tags}</div>
         <div class="meta"><b>Media:</b> ${mediaType}</div>
-        <div class="meta"><b>Description:</b> ${description}</div>
+        <div class="description"><b>Description:</b> ${description}</div>
         <div class="meta">
           <a href="${reviewUrl}" target="_blank" class="reviews-link">Reviews</a>
         </div>
@@ -587,7 +634,10 @@
       // Store item for filtering
       allItems.push({
         element: card,
-        mediatype: mediaType
+        identifier: identifier,
+        mediatype: mediaType,
+        title: title.toLowerCase(),
+        tags: tags.toLowerCase()
       });
       
       // Observe preview for lazy loading
@@ -628,30 +678,11 @@
       // Append the entire batch
       grid.appendChild(fragment);
       
+      // Update displayed items
+      displayedItems = [...allItems];
+      
       // Update status
-      status.textContent = `Loaded ${items.length} items • Page ${state.page - 1} of ${Math.ceil(state.total / 9)}`;
-      
-      // Hide load more button if exhausted
-      if (state.exhausted) {
-        loadMoreBtn.style.display = "none";
-        status.textContent += " • All items loaded";
-      }
-    }
-
-    async function loadMoreItems() {
-      loadMoreBtn.disabled = true;
-      loadMoreBtn.textContent = "Loading...";
-      
-      const identifier = profileUrl || username;
-      const items = await fetchItems(identifier, accountState[identifier].page);
-      if (items) {
-        await renderItems(identifier, items);
-      } else if (accountState[identifier].exhausted) {
-        status.textContent = "No more items to load";
-      }
-      
-      loadMoreBtn.disabled = false;
-      loadMoreBtn.textContent = "Load More";
+      status.textContent = `Loaded ${items.length} items • Total: ${state.total}`;
     }
 
     // Fullscreen item functionality
@@ -668,19 +699,80 @@
         document.body.removeChild(overlay);
       };
       
-      // Create embed container
-      const embedContainer = document.createElement("div");
-      embedContainer.className = "embed-container";
-      embedContainer.innerHTML = `<iframe src="${embedUrl}" allowfullscreen></iframe>`;
+      // Create iframe
+      const iframe = document.createElement("iframe");
+      iframe.className = "fullscreen-iframe";
+      iframe.src = embedUrl;
+      iframe.allowFullscreen = true;
       
       // Assemble and add to body
       overlay.appendChild(closeBtn);
-      overlay.appendChild(embedContainer);
+      overlay.appendChild(iframe);
       document.body.appendChild(overlay);
     }
 
+    // Filter functions
+    function applyMediaTypeFilter() {
+      const selectedType = mediatypeFilter.value;
+      
+      // Reset grid
+      grid.innerHTML = '';
+      
+      // Filter items
+      displayedItems = selectedType 
+        ? allItems.filter(item => item.mediatype === selectedType)
+        : [...allItems];
+      
+      // Render filtered items
+      displayedItems.forEach(item => {
+        grid.appendChild(item.element);
+      });
+      
+      status.textContent = `Showing ${displayedItems.length} of ${allItems.length} items`;
+    }
+
+    function performSearch() {
+      const searchTerm = searchInput.value.toLowerCase();
+      const searchType = searchTypeSelect.value;
+      
+      if (!searchTerm) {
+        // If search is empty, show all items
+        displayedItems = [...allItems];
+        grid.innerHTML = '';
+        allItems.forEach(item => {
+          grid.appendChild(item.element);
+        });
+        status.textContent = `Showing all ${allItems.length} items`;
+        return;
+      }
+      
+      // Filter based on search type
+      displayedItems = allItems.filter(item => {
+        if (searchType === 'title') {
+          return item.title.includes(searchTerm);
+        } else if (searchType === 'tags') {
+          return item.tags.includes(searchTerm);
+        }
+        return false;
+      });
+      
+      // Render filtered items
+      grid.innerHTML = '';
+      displayedItems.forEach(item => {
+        grid.appendChild(item.element);
+      });
+      
+      status.textContent = `Found ${displayedItems.length} items matching "${searchTerm}"`;
+    }
+
     // Event listeners
-    loadMoreBtn.addEventListener("click", loadMoreItems);
+    applyMediatypeBtn.addEventListener("click", applyMediaTypeFilter);
+    searchBtn.addEventListener("click", performSearch);
+    searchInput.addEventListener("keyup", (e) => {
+      if (e.key === "Enter") {
+        performSearch();
+      }
+    });
 
     // Initialize
     (async function init() {
