@@ -317,12 +317,14 @@
       <label for="mediatype-filter">Media Type:</label>
       <select id="mediatype-filter">
         <option value="">All Types</option>
-        <option value="video">Video</option>
+        <option value="movies">Movies</option>
         <option value="audio">Audio</option>
         <option value="texts">Texts</option>
         <option value="image">Image</option>
         <option value="software">Software</option>
         <option value="data">Data</option>
+        <option value="web">Web</option>
+        <option value="collection">Collection</option>
       </select>
       <button id="apply-mediatype">OK</button>
     </div>
@@ -481,8 +483,13 @@
         `&fl[]=mediatype` +
         `&fl[]=description` +
         `&fl[]=subject` +
+        `&fl[]=email` +
+        `&fl[]=link1` +
+        `&fl[]=link2` +
+        `&fl[]=link3` +
+        `&fl[]=phone` +
         `&sort[]=publicdate desc` +
-        `&rows=50` + // Increased rows to load more items
+        `&rows=50` +
         `&page=${page}` +
         `&output=json`;
 
@@ -514,12 +521,14 @@
         const mediatype = data.metadata?.mediatype;
 
         const allowedFormatsByType = {
-          video: ["mpeg4", "h.264", "matroska", "quicktime"],
+          movies: ["mpeg4", "h.264", "matroska", "quicktime"],
           audio: ["mp3", "ogg", "flac", "wav", "aac"],
           texts: ["text pdf", "pdf", "djvu", "epub"],
           image: ["jpeg", "jpg", "png", "tiff", "bmp"],
           software: ["zip", "exe", "iso", "tar"],
-          data: ["zip", "csv", "json"]
+          data: ["zip", "csv", "json"],
+          web: ["html", "htm"],
+          collection: ["zip"]
         };
 
         const allowedFormats = allowedFormatsByType[mediatype] || [];
@@ -560,6 +569,12 @@
       const tags = metadata.subject ? metadata.subject.toString() : "None";
       const mediaType = metadata.mediatype || "unknown";
       const description = metadata.description ? metadata.description.toString() : "No description";
+      const email = metadata.email || "";
+      const link1 = metadata.link1 || "";
+      const link2 = metadata.link2 || "";
+      const link3 = metadata.link3 || "";
+      const phone = metadata.phone || "";
+      
       const reviewUrl = `https://archive.org/details/${identifier}#reviews`;
       const embedUrl = `https://archive.org/embed/${identifier}`;
       const shareUrl = `https://yan-1-related-1.github.io/yan-1-website-shared-links-redirecting/archive-identifier-page-shared-links-redirecting.html?username=${username}&identifier=${identifier}`;
@@ -570,6 +585,18 @@
       card.dataset.mediatype = mediaType;
       card.dataset.title = title.toLowerCase();
       card.dataset.tags = tags.toLowerCase();
+
+      // Build contact info section
+      let contactInfoHTML = '';
+      if (email || link1 || link2 || link3 || phone) {
+        contactInfoHTML = '<div class="meta"><b>Contact Info:</b><br>';
+        if (email) contactInfoHTML += `📧 ${email}<br>`;
+        if (link1) contactInfoHTML += `🔗 ${link1}<br>`;
+        if (link2) contactInfoHTML += `🔗 ${link2}<br>`;
+        if (link3) contactInfoHTML += `🔗 ${link3}<br>`;
+        if (phone) contactInfoHTML += `📞 ${phone}<br>`;
+        contactInfoHTML += '</div>';
+      }
 
       card.innerHTML = `
         <div class="title">${title}</div>
@@ -582,6 +609,7 @@
         <div class="meta"><b>Tags:</b> ${tags}</div>
         <div class="meta"><b>Media:</b> ${mediaType}</div>
         <div class="description"><b>Description:</b> ${description}</div>
+        ${contactInfoHTML}
         <div class="meta">
           <a href="${reviewUrl}" target="_blank" class="reviews-link">Reviews</a>
         </div>
@@ -687,14 +715,22 @@
 
     // Fullscreen item functionality
     function openFullscreen(embedUrl) {
+      // Remove any existing overlays
+      const existingOverlay = document.querySelector('.fullscreen-overlay');
+      if (existingOverlay) {
+        document.body.removeChild(existingOverlay);
+      }
+      
       // Create overlay
       const overlay = document.createElement("div");
       overlay.className = "fullscreen-overlay";
+      overlay.style.zIndex = "9999";
       
       // Create close button
       const closeBtn = document.createElement("button");
       closeBtn.className = "close-btn";
       closeBtn.innerHTML = "✕";
+      closeBtn.style.zIndex = "10000";
       closeBtn.onclick = () => {
         document.body.removeChild(overlay);
       };
@@ -704,11 +740,26 @@
       iframe.className = "fullscreen-iframe";
       iframe.src = embedUrl;
       iframe.allowFullscreen = true;
+      iframe.style.position = "fixed";
+      iframe.style.top = "0";
+      iframe.style.left = "0";
+      iframe.style.width = "100%";
+      iframe.style.height = "100%";
+      iframe.style.border = "none";
+      iframe.style.zIndex = "9998";
       
       // Assemble and add to body
       overlay.appendChild(closeBtn);
       overlay.appendChild(iframe);
       document.body.appendChild(overlay);
+      
+      // Prevent scrolling when fullscreen is active
+      document.body.style.overflow = "hidden";
+      
+      // Re-enable scrolling when overlay is closed
+      overlay.addEventListener('DOMNodeRemoved', function() {
+        document.body.style.overflow = "auto";
+      });
     }
 
     // Filter functions
