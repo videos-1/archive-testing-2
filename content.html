@@ -66,12 +66,30 @@
       background: #334155;
     }
 
+    .grid-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2rem;
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    .grid-section {
+      flex: 1;
+      min-width: 300px;
+    }
+
+    .grid-section h2 {
+      text-align: center;
+      font-size: 1.2rem;
+      margin-bottom: 1rem;
+      color: #38bdf8;
+    }
+
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
       gap: 1rem;
-      max-width: 1200px;
-      margin: auto;
     }
 
     .card {
@@ -309,11 +327,22 @@
 
   <div class="subtitle" id="subtitle"></div>
 
-  <div class="grid" id="grid"></div>
+  <div class="grid-container">
+    <div class="grid-section">
+      <h2>Profile Items</h2>
+      <div class="grid" id="grid"></div>
+    </div>
+    <div class="grid-section">
+      <h2>Identifiers</h2>
+      <div class="grid" id="identifiers-grid"></div>
+    </div>
+  </div>
+
   <div class="status" id="status">Initializing…</div>
 
   <script>
     const grid = document.getElementById("grid");
+    const identifiersGrid = document.getElementById("identifiers-grid");
     const status = document.getElementById("status");
     const subtitle = document.getElementById("subtitle");
     const mediatypeSelect = document.getElementById("mediatype");
@@ -540,11 +569,50 @@
       }
     }
 
-    function createCard(identifier, metadata, username) {
+    // Fetch metadata using Archive.org metadata API
+    async function fetchIdentifierMetadata(identifier) {
+      try {
+        const response = await fetch(`https://archive.org/metadata/${identifier}`);
+        const data = await response.json();
+        
+        if (data.metadata) {
+          // Use metadata from the metadata API response
+          return {
+            identifier: identifier,
+            title: data.metadata.title || identifier,
+            creator: data.metadata.creator || "Unknown",
+            publicdate: data.metadata.publicdate || "N/A",
+            mediatype: data.metadata.mediatype || "unknown",
+            description: data.metadata.description || "No description",
+            subject: data.metadata.subject || [],
+            gmail: data.metadata.gmail,
+            link1: data.metadata.link1,
+            link2: data.metadata.link2,
+            link3: data.metadata.link3,
+            phone_number: data.metadata.phone_number
+          };
+        }
+      } catch (error) {
+        console.error(`Error fetching metadata for ${identifier}:`, error);
+      }
+      
+      // Fallback: return basic metadata
+      return {
+        identifier: identifier,
+        title: identifier,
+        creator: "Unknown",
+        publicdate: "N/A",
+        mediatype: "unknown",
+        description: "No description available",
+        subject: []
+      };
+    }
+
+    function createCard(identifier, metadata, username = null) {
       const title = metadata.title || identifier;
       const creator = metadata.creator || "Unknown";
       const date = metadata.publicdate || "N/A";
-      const tags = metadata.subject ? metadata.subject.toString().slice(0, 100) : "None";
+      const tags = metadata.subject ? (Array.isArray(metadata.subject) ? metadata.subject.join(", ") : metadata.subject.toString()).slice(0, 100) : "None";
       const mediaType = metadata.mediatype || "unknown";
       const description = metadata.description ? metadata.description.toString() : "No description";
       const gmail = metadata.gmail;
@@ -553,7 +621,10 @@
       const link3 = metadata.link3;
       const phone_number = metadata.phone_number;
       const reviewUrl = `https://archive.org/details/${identifier}#reviews`;
-      const shareUrl = `https://yan-1-related-1.github.io/yan-1-website-shared-links-redirecting/archive-identifier-page-shared-links-redirecting.html?username=${username}&identifier=${identifier}`;
+      
+      // Modified: Add username=yanshun081 as the last parameter for identifiers
+      const shareUrl = `https://yan-1-related-1.github.io/yan-1-website-shared-links-redirecting/archive-identifier-page-shared-links-redirecting.html?identifier=${identifier}` + 
+        (username ? `&username=${username}` : `&username=yanshun081`);
 
       const card = document.createElement("div");
       card.className = "card";
@@ -567,7 +638,14 @@
           <div class="preview-placeholder">Loading preview…</div>
         </div>
         <div class="meta"><b>Creator:</b> ${creator}</div>
-        <div class="username-meta"><b>Username:</b> @${username}</div>
+      `;
+
+      // Only show username if provided (for profile items)
+      if (username) {
+        metaHtml += `<div class="username-meta"><b>Username:</b> @${username}</div>`;
+      }
+
+      metaHtml += `
         <div class="meta"><b>Date:</b> ${date}</div>
         <div class="meta"><b>Tags:</b> ${tags}</div>
         <div class="meta"><b>Media:</b> ${mediaType}</div>
@@ -655,7 +733,8 @@
           `;
           
           filesInfo.querySelector(".files-symbol").onclick = () => {
-            window.location.href = `items_playlist.html?username=${encodeURIComponent(username)}&identifier=${encodeURIComponent(identifier)}`;
+            window.location.href = `items_playlist.html?identifier=${encodeURIComponent(identifier)}` + 
+              (username ? `&username=${encodeURIComponent(username)}` : `&username=yanshun081`);
           };
           
           // Insert before card-actions
@@ -715,7 +794,83 @@
       });
     }
 
+    // Function to fetch identifiers from identifiers.html
+    async function fetchIdentifiers() {
+      try {
+        const response = await fetch('identifiers.html');
+        const text = await response.text();
+        
+        // Parse the HTML content
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(text, 'text/html');
+        
+        // Extract identifiers (assuming they are in a list or similar structure)
+        const identifiers = [];
+        const identifierElements = doc.querySelectorAll('[data-identifier]');
+        
+        identifierElements.forEach(el => {
+          const identifier = el.dataset.identifier;
+          if (identifier) {
+            identifiers.push(identifier);
+          }
+        });
+        
+        return identifiers;
+      } catch (error) {
+        console.error('Error fetching identifiers:', error);
+        return [];
+      }
+    }
+
+    // Function to render identifiers with full metadata
+    async function renderIdentifiers() {
+      const identifiers = await fetchIdentifiers();
+      
+      if (identifiers.length === 0) {
+        identifiersGrid.innerHTML = '<div class="status">No identifiers found</div>';
+        return;
+      }
+      
+      // Create placeholder cards first
+      const fragment = document.createDocumentFragment();
+      
+      identifiers.forEach(identifier => {
+        const placeholderCard = document.createElement("div");
+        placeholderCard.className = "card placeholder";
+        placeholderCard.innerHTML = `
+          <div class="title">${identifier}</div>
+          <div class="preview-placeholder">Loading metadata…</div>
+          <div class="meta"><b>Status:</b> Fetching details...</div>
+        `;
+        fragment.appendChild(placeholderCard);
+        
+        // Fetch metadata asynchronously and replace placeholder
+        fetchIdentifierMetadata(identifier).then(metadata => {
+          const fullCard = createCard(identifier, metadata);
+          placeholderCard.replaceWith(fullCard);
+        }).catch(error => {
+          console.error(`Failed to fetch metadata for ${identifier}:`, error);
+          placeholderCard.innerHTML = `
+            <div class="title">${identifier}</div>
+            <div class="preview-placeholder">Failed to load</div>
+            <div class="meta"><b>Error:</b> Could not fetch metadata</div>
+            <div class="card-actions">
+              <button class="open-btn">Open Item</button>
+            </div>
+          `;
+          placeholderCard.querySelector(".open-btn").onclick = () => {
+            window.open(`https://archive.org/details/${identifier}`, "_blank");
+          };
+        });
+      });
+      
+      identifiersGrid.appendChild(fragment);
+    }
+
     async function mainLoop() {
+      // Fetch and render identifiers with full metadata
+      await renderIdentifiers();
+      
       while (true) {
         const account = pickRandomAccount();
 
