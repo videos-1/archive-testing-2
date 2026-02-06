@@ -2,66 +2,44 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Identifiers from Google Sheet</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-    }
-    .identifier {
-      padding: 8px;
-      margin: 6px 0;
-      background: #f2f2f2;
-      border-radius: 4px;
-    }
-  </style>
+  <title>Identifiers</title>
 </head>
-<body>
 
-  <h2>Identifiers (Loaded from Google Sheet)</h2>
-
-  <div id="identifiers"></div>
+<body style="display:none">
 
 <script>
-/* ============================
+/* ===============================
    GOOGLE SHEET CONFIG
-   ============================ */
+   =============================== */
 
-const sheetId = "1zGhhqc5P3Mnnm97ZJcGVI0aUXTwkYqUN5ZZwr2ycGaE";
-const sheetName = "Sheet1";   // change if your sheet name is different
+const SHEET_ID = "1zGhhqc5P3Mnnm97ZJcGVI0aUXTwkYqUN5ZZwr2ycGaE";
+const SHEET_NAME = "Sheet1"; // change if needed
 
-// Google Visualization API URL
-const sheetURL =
-  `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
+const SHEET_URL =
+  `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAME}`;
 
-/* ============================
-   FETCH & RENDER IDENTIFIERS
-   ============================ */
+/* ===============================
+   LOAD IDENTIFIERS FROM SHEET
+   =============================== */
 
-fetch(sheetURL)
+fetch(SHEET_URL)
   .then(res => res.text())
   .then(text => {
-    // Remove Google JSON wrapper
     const json = JSON.parse(text.substring(47, text.length - 2));
-
     const rows = json.table.rows;
-    const container = document.getElementById("identifiers");
 
     rows.forEach(row => {
-      if (row.c && row.c[0] && row.c[0].v) {
-        const identifier = row.c[0].v;
+      const identifier = row.c?.[0]?.v;
+      if (!identifier) return;
 
-        const div = document.createElement("div");
-        div.className = "identifier";
-        div.setAttribute("data-identifier", identifier);
-        div.textContent = identifier;
+      const div = document.createElement("div");
+      div.setAttribute("data-identifier", identifier);
 
-        container.appendChild(div);
-      }
+      document.body.appendChild(div);
     });
   })
   .catch(err => {
-    console.error("Error loading sheet:", err);
+    console.error("Failed to load identifiers from Google Sheet", err);
   });
 </script>
 
